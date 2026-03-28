@@ -185,4 +185,8 @@ if __name__ == "__main__":
     from aiogram import executor
 
     print("Telegram bot starting...")
+    repos = scan_repos()
+    for r in repos:
+        register_repo(r, workdir=r)
+    print(f"Found and registered {len(repos)} repositories on startup")
     executor.start_polling(dp, skip_updates=True)

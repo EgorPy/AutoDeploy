@@ -5,28 +5,34 @@ from database import conn, get_services, get_main_workdir
 
 def scan_repos():
     """
-        Scans MAIN_WORKDIR for Git repositories.
-        Returns a list of repository paths.
-        """
+    Scans MAIN_WORKDIR for Git repositories.
+    Returns a list of repository paths.
+    """
 
-    MAIN_WORKDIR = get_main_workdir()
+    main_workdir = get_main_workdir()
     repos = []
-    for root, dirs, files in os.walk(MAIN_WORKDIR):
+
+    # if os.path.isdir(os.path.join(main_workdir, ".git")):
+    #     repos.append(main_workdir)
+
+    for root, dirs, files in os.walk(main_workdir):
         if ".git" in dirs:
             repos.append(root)
             dirs.clear()
     return repos
 
 
-def register_repo(path):
+def register_repo(repo_path, workdir=None):
+    if workdir is None:
+        workdir = repo_path
     c = conn()
-    r = c.execute("SELECT id FROM services WHERE workdir=?", (path,)).fetchone()
+    r = c.execute("SELECT id FROM services WHERE workdir=?", (workdir,)).fetchone()
     if not r:
-        name = os.path.basename(path)
-        c.execute("""
-            INSERT INTO services (name, repo, run_command, workdir, pid, autostart)
-            VALUES (?, ?, ?, ?, ?, ?)
-        """, (name, name, "", path, None, 0))
+        name = os.path.basename(repo_path)
+        c.execute(
+            "INSERT INTO services (name, repo, workdir) VALUES (?,?,?)",
+            (name, repo_path, workdir),
+        )
         c.commit()
     c.close()
 
