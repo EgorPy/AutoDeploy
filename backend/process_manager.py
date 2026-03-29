@@ -86,22 +86,26 @@ def _build_env(venv_path, workdir):
 
 
 def _resolve_venv(service):
-    """
-    Приоритет:
-    1. Явно указанный venv_path в БД
-    2. .venv внутри workdir
-    """
     workdir = service["workdir"]
 
     custom = service.get("venv_path")
     if custom:
-        venv = custom if os.path.basename(custom) == ".venv" else os.path.join(custom, ".venv")
-        if os.path.exists(venv):
-            return venv
+        # Если путь уже указывает прямо на venv папку — используем как есть
+        if os.path.exists(os.path.join(custom, "Scripts", "python.exe")) or \
+                os.path.exists(os.path.join(custom, "bin", "python")):
+            return custom
 
-    local = os.path.join(workdir, ".venv")
-    if os.path.exists(local):
-        return local
+        # Иначе пробуем добавить .venv и venv
+        for name in (".venv", "venv"):
+            candidate = os.path.join(custom, name)
+            if os.path.exists(candidate):
+                return candidate
+
+    # Локальный .venv или venv внутри workdir
+    for name in (".venv", "venv"):
+        local = os.path.join(workdir, name)
+        if os.path.exists(local):
+            return local
 
     return None
 
