@@ -36,6 +36,7 @@ Available commands:
 /services — list all registered services
 /add_service <path> — add service
 /remove_service <id> — remove service
+/deploy — update and deploy all services
 
 /start <id> — start a service
 /stop <id> — stop a service

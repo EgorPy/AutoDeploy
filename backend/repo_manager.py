@@ -40,7 +40,14 @@ def register_repo(repo_path, workdir=None):
 
 
 def update_repo(path):
-    subprocess.call("git pull", shell=True, cwd=path)
+    result = subprocess.run(
+        "git pull",
+        shell=True,
+        cwd=path,
+        capture_output=True,
+        text=True
+    )
+    return result.stdout + result.stderr
 
 
 async def deploy(bot: Bot = None, chat_id: int = None):
@@ -51,11 +58,12 @@ async def deploy(bot: Bot = None, chat_id: int = None):
 
     services = db.select(Services)
     for service in services:
-        await logger.note(f"Deploying {service}", bot=bot, chat_id=chat_id)
+        await logger.note(f"Deploying {service.get('name')}", bot=bot, chat_id=chat_id)
         workdir = service["workdir"]
         cmd = service["run_command"]
         if os.path.exists(workdir):
-            update_repo(workdir)
+            result = update_repo(workdir)
+            await logger.note(result, bot=bot, chat_id=chat_id)
         if cmd:
             from process_manager import restart
             restart(service)
