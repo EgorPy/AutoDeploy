@@ -85,14 +85,14 @@ Run the webhook and Telegram bot with Python 3.9:
 
 ```bash
 python3.9 webhook.py
-python3.9 telegram_bot.py
+python3.9 ad_main.py
 ```
 
 Or in the background using `nohup`:
 
 ```bash
 nohup python3.9 webhook.py > webhook.out 2>&1 &
-nohup python3.9 telegram_bot.py > bot.out 2>&1 &
+nohup python3.9 ad_main.py > bot.out 2>&1 &
 ```
 
 ---

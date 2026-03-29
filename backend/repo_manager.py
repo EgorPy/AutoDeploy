@@ -1,6 +1,13 @@
-import os
+from core.method_generator import cm, AutoDB
+from core.logger import logger
+
+from backend.schema import Services, Settings
+
+from aiogram import Bot
 import subprocess
-from database import conn, get_services, get_main_workdir
+import os
+
+db = AutoDB(cm)
 
 
 def scan_repos():
@@ -9,7 +16,7 @@ def scan_repos():
     Returns a list of repository paths.
     """
 
-    main_workdir = get_main_workdir()
+    main_workdir = db.select_one(Settings, key="MAIN_WORKDIR").get("value")
     repos = []
 
     # if os.path.isdir(os.path.join(main_workdir, ".git")):
@@ -25,40 +32,30 @@ def scan_repos():
 def register_repo(repo_path, workdir=None):
     if workdir is None:
         workdir = repo_path
-    c = conn()
-    r = c.execute("SELECT id FROM services WHERE workdir=?", (workdir,)).fetchone()
-    if not r:
+
+    result = db.select_one(Services, workdir=workdir)
+    if not result:
         name = os.path.basename(repo_path)
-        c.execute(
-            "INSERT INTO services (name, repo, workdir) VALUES (?,?,?)",
-            (name, repo_path, workdir),
-        )
-        c.commit()
-    c.close()
+        db.insert(Services, name=name, repo=repo_path, workdir=workdir)
 
 
 def update_repo(path):
     subprocess.call("git pull", shell=True, cwd=path)
 
 
-def deploy():
+async def deploy(bot: Bot = None, chat_id: int = None):
     """
-    1. Scans MAIN_WORKDIR
-    2. Registers new repos in db
-    3. Updates repos
-    4. Restarts programs that have run_command
+    1. Updates repos
+    2. Restarts programs that have run_command
     """
 
-    repos = scan_repos()
-    for r in repos:
-        register_repo(r)
-
-    services = get_services()
-    for s in services:
-        workdir = s[4]
-        cmd = s[3]
+    services = db.select(Services)
+    for service in services:
+        await logger.note(f"Deploying {service}", bot=bot, chat_id=chat_id)
+        workdir = service["workdir"]
+        cmd = service["run_command"]
         if os.path.exists(workdir):
             update_repo(workdir)
         if cmd:
             from process_manager import restart
-            restart(s)
+            restart(service)
