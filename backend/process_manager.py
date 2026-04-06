@@ -71,7 +71,7 @@ def _build_env(venv_path, workdir):
     env = os.environ.copy()
 
     if venv_path:
-        if os.name == "nt":
+        if os.name == "nt":  # Windows
             bin_dir = os.path.join(venv_path, "Scripts")
         else:
             bin_dir = os.path.join(venv_path, "bin")
